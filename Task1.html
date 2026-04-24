@@ -4,15 +4,15 @@
 <h1>Task 1</h1>
 <textarea id="record">Enter Item details here</textarea>
 <select id="inventory">
-    <option valie="A">A</option>
-    <option valie="B">B</option>
-    <option valie="C">C</option>
-    <option valie="D">D</option>
+    <option value="A">A</option>
+    <option value="B">B</option>
+    <option value="C">C</option>
+    <option value="D">D</option>
 </select>
 
 <button onclick="sign()">Sign</button>
 <button onclick="verify()">Verify</button>
-
+<script src="crypto-js.min.js"></script>
 <script type="module">
 import keys from '/Config/keys.js';
 // mod inverse
@@ -54,17 +54,69 @@ function modInverse(a, m) {
 }
 // https://www.geeksforgeeks.org/dsa/multiplicative-inverse-under-modulo-m/
 // power mod
-function powMod(a, b, m){
-    return (a^b) % m;
+function powMod(base, exp, mod) {
+    let result = 1n;
+    base %= mod;
+
+    while (exp > 0n) {
+        if (exp % 2n) result = (result * base) % mod;
+        base = (base * base) % mod;
+        exp /= 2n;
+    }
+
+    return result;
 }
 // sha 256 hash
-// derive n, phi and d
-function calculateRSAParams(){
-    console.log(PART1);
+function sha256(data){
+    let hashOutput = CryptoJS.SHA256(data).toString();
+    return hashOutput
 }
-calculateRSAParams()
+// derive n, phi and d
+function calculateRSAParams(p, q, e){
+    // Calculates value of n, phi and d
+    let n = p * q
+    let phi = (p-1n) * (q-1n)
+    let d = modInverse(e, phi)
+    return { n, phi, d };
+}
 // sign record hash^d mod n
+function sign(){
+    let p = 0
+    let q = 0
+    let e = 0
+    if (document.getElementById("inventory").value === 'A'){
+        p = keys.PART1.A.p
+        q = keys.PART1.A.q
+        e = keys.PART1.A.e
+    }
+    else if (document.getElementById("inventory").value === 'B'){
+        p = keys.PART1.B.p
+        q = keys.PART1.B.q
+        e = keys.PART1.B.e
+    }
+    else if (document.getElementById("inventory").value === 'C'){
+        p = keys.PART1.C.p
+        q = keys.PART1.C.q
+        e = keys.PART1.C.e
+    }
+    else{
+        p = keys.PART1.D.p
+        q = keys.PART1.D.q
+        e = keys.PART1.D.e
+    }
+    let { n, phi, d } = calculateRSAParams(p, q, e);
+    let plaintext = document.getElementById("record").value;
+    let hash = sha256(plaintext);
+    let decimalHash = BigInt("0x" + hash);
+    let signature = powMod(decimalHash, d, n);
+    console.log(signature)
+}
 // verify signature sig^e mod n
+function verify(){
+    return 0;
+}
+window.sign = sign;
+window.verify = verify;
 </script>
 </body>
 </html>
