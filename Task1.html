@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1>Task 1</h1>
+<textarea id="record">Enter Item details here</textarea>
+<select id="inventory">
+    <option valie="A">A</option>
+    <option valie="B">B</option>
+    <option valie="C">C</option>
+    <option valie="D">D</option>
+</select>
+
+<button onclick="sign()">Sign</button>
+<button onclick="verify()">Verify</button>
+
+<script>
+// mod inverse
+
+/**
+ * Computes the modular multiplicative inverse of a modulo m.
+ * Returns NaN if the inverse does not exist.
+ */
+function modInverse(a, m) {
+    let m0 = BigInt(m);
+    let y = 0n, x = 1n;
+
+    if (m0 === 1n) return 0n;
+
+    while (a > 1n) {
+        // q is quotient
+        let q = a / m0;
+        let t = m0;
+
+        // m0 is remainder now, process same as
+        // Euclid's algo
+        m0 = a % m0;
+        a = t;
+        t = y;
+
+        // Update y and x
+        y = x - q * y;
+        x = t;
+    }
+
+    // Make x positive
+    if (x < 0n) x += BigInt(m);
+
+    return x;
+}
+// https://www.geeksforgeeks.org/dsa/multiplicative-inverse-under-modulo-m/
+// power mod
+// sha 256 hash
+// derive n, phi and d
+// sign record hash^d mod n
+// verify signature sig^e mod n
+</script>
+</body>
+</html>
