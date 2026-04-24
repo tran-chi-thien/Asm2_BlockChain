@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   PART1: {
     A: {
       p: BigInt("1210613765735147311106936311866593978079938707"),

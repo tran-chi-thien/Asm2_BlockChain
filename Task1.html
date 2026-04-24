@@ -13,9 +13,14 @@
 <button onclick="sign()">Sign</button>
 <button onclick="verify()">Verify</button>
 
-<script>
+<script type="module">
+import keys from '/Config/keys.js';
 // mod inverse
+const pA = keys.PART1.A.p;
+const eB = keys.PART1.B.e;
 
+console.log(pA.toString());
+console.log(eB.toString());
 /**
  * Computes the modular multiplicative inverse of a modulo m.
  * Returns NaN if the inverse does not exist.
@@ -49,8 +54,15 @@ function modInverse(a, m) {
 }
 // https://www.geeksforgeeks.org/dsa/multiplicative-inverse-under-modulo-m/
 // power mod
+function powMod(a, b, m){
+    return (a^b) % m;
+}
 // sha 256 hash
 // derive n, phi and d
+function calculateRSAParams(){
+    console.log(PART1);
+}
+calculateRSAParams()
 // sign record hash^d mod n
 // verify signature sig^e mod n
 </script>
