@@ -16,21 +16,17 @@
 <script src="crypto-js.min.js"></script>
 <script type="module">
 import keys from '/Config/keys.js';
-// mod inverse
-const pA = keys.PART1.A.p;
-const eB = keys.PART1.B.e;
 
-console.log(pA.toString());
-console.log(eB.toString());
-/**
- * Computes the modular multiplicative inverse of a modulo m.
- * Returns NaN if the inverse does not exist.
- */
+// Computes the modular multiplicative inverse of a modulo m.
+// Returns NaN if the inverse does not exist.
+
 function modInverse(a, m) {
     let m0 = BigInt(m);
     let y = 0n, x = 1n;
 
-    if (m0 === 1n) return 0n;
+    if (m0 === 1n){
+        return 0n;
+    } 
 
     while (a > 1n) {
         // q is quotient
@@ -38,7 +34,7 @@ function modInverse(a, m) {
         let t = m0;
 
         // m0 is remainder now, process same as
-        // Euclid's algo
+        // Euclid's algorithm
         m0 = a % m0;
         a = t;
         t = y;
@@ -49,7 +45,9 @@ function modInverse(a, m) {
     }
 
     // Make x positive
-    if (x < 0n) x += BigInt(m);
+    if (x < 0n){
+        x += BigInt(m);
+    }
 
     return x;
 }
@@ -73,20 +71,11 @@ function sha256(data){
     return hashOutput
 }
 // derive n, phi and d
-function calculateRSAParams(p, q, e){
+function calculateRSAParams(){
     // Calculates value of n, phi and d
-    let n = p * q
-    let phi = (p-1n) * (q-1n)
-    let d = modInverse(e, phi)
-    return { n, phi, d };
-}
-// sign record hash^d mod n
-function sign(){
     let p = 0;
     let q = 0;
     let e = 0;
-    let results = document.getElementById("results");
-    results.textContent = "";
     if (document.getElementById("inventory").value === 'A'){
         p = keys.PART1.A.p
         q = keys.PART1.A.q
@@ -107,12 +96,26 @@ function sign(){
         q = keys.PART1.D.q
         e = keys.PART1.D.e
     }
+    let n = p * q
+    let phi = (p-1n) * (q-1n)
+    let d = modInverse(e, phi)
+    return { p, q, e, n, phi, d };
+}
+// sign record hash^d mod n
+let signature = null
+let results = document.getElementById("results");
+function sign(){
+    let { p, q, e, n, phi, d} = calculateRSAParams()
+
+    results.textContent = "";
     results.innerHTML += (`p value: ${p}<br>q value: ${q}<br>e value: ${e}<br>`)
-    let { n, phi, d } = calculateRSAParams(p, q, e);
+
     let plaintext = document.getElementById("record").value;
     let hash = sha256(plaintext);
     let decimalHash = BigInt("0x" + hash);
-    let signature = powMod(decimalHash, d, n);
+
+    signature = powMod(decimalHash, d, n);
+
     results.innerHTML += (`n value: ${n}<br>phi value: ${phi}<br>d value: ${d}<br>`)
     results.innerHTML += (`public key: (${e}, ${n})<br>private key: (${d}, ${n})<br>`)
     results.innerHTML += (`hash value: ${hash}<br>decimal hash value: ${decimalHash}<br>`)
@@ -120,7 +123,20 @@ function sign(){
 }
 // verify signature sig^e mod n
 function verify(){
-    return 0;
+    if (!signature){
+        results.innerHTML = "No signature to verify";
+        return;
+    }
+    let record = document.getElementById("record").value;
+    let inventory = document.getElementById("inventory").value;
+    let { p, q, e, n } = calculateRSAParams();
+    let hashedRecord = sha256(record);
+    let decimalHash = BigInt("0x" + hashedRecord);
+    let decryptedSig = powMod(signature, e, n)
+    if (decimalHash === decryptedSig){
+        results.innerHTML = "Sig good"
+    }
+    console.log(decimalHash, decryptedSig)
 }
 window.sign = sign;
 window.verify = verify;
