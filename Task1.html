@@ -103,26 +103,29 @@ function calculateRSAParams(){
 }
 // sign record hash^d mod n
 let signature = null
+let signingInventory = null
 let results = document.getElementById("results");
 function sign(){
     let { p, q, e, n, phi, d} = calculateRSAParams()
 
     results.textContent = "";
-    results.innerHTML += (`p value: ${p}<br>q value: ${q}<br>e value: ${e}<br>`)
+    results.innerHTML += (`Inventory: ${document.getElementById("inventory").value}<br><br>`)
+    results.innerHTML += (`p value: ${p}<br>q value: ${q}<br>e value: ${e}<br><br>`)
 
     let plaintext = document.getElementById("record").value;
     let hash = sha256(plaintext);
     let decimalHash = BigInt("0x" + hash);
 
     signature = powMod(decimalHash, d, n);
-
-    results.innerHTML += (`n value: ${n}<br>phi value: ${phi}<br>d value: ${d}<br>`)
-    results.innerHTML += (`public key: (${e}, ${n})<br>private key: (${d}, ${n})<br>`)
-    results.innerHTML += (`hash value: ${hash}<br>decimal hash value: ${decimalHash}<br>`)
-    results.innerHTML += (`signature value: ${signature}`)
+    signingInventory = document.getElementById("inventory").value
+    results.innerHTML += (`n (p*q): ${n}<br>phi(n): ${phi}<br><br>`)
+    results.innerHTML += (`Public key (e, n): (${e}, ${n})<br>Private key (d, n): (${d}, ${n})<br><br>`)
+    results.innerHTML += (`Hash value: ${hash}<br>Decimal Hash value: ${decimalHash}<br><br>`)
+    results.innerHTML += (`Signature: ${signature}`)
 }
 // verify signature sig^e mod n
 function verify(){
+    results.innerHTML = "";
     if (!signature){
         results.innerHTML = "No signature to verify";
         return;
@@ -133,10 +136,18 @@ function verify(){
     let hashedRecord = sha256(record);
     let decimalHash = BigInt("0x" + hashedRecord);
     let decryptedSig = powMod(signature, e, n)
+    let valid = false;
     if (decimalHash === decryptedSig){
-        results.innerHTML = "Sig good"
+        valid = true;
     }
-    console.log(decimalHash, decryptedSig)
+    results.innerHTML += `Recomputed hash (decimal): ${decimalHash}<br>`;
+    results.innerHTML += `Decrypted Signature (decimal): ${decryptedSig}<br>`;
+    if (valid){
+        results.innerHTML += `Signature is VALID (Authentic and Untampered)`;
+    }
+    else{
+        results.innerHTML += `Signature is INVALID`;
+    }
 }
 window.sign = sign;
 window.verify = verify;
