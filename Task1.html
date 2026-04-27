@@ -12,6 +12,7 @@
 
 <button onclick="sign()">Sign</button>
 <button onclick="verify()">Verify</button>
+<button onclick="tamper()">Tamper Test</button>
 <p id="results"></p>
 <script src="crypto-js.min.js"></script>
 <script type="module">
@@ -51,79 +52,85 @@ function modInverse(a, m) {
 
     return x;
 }
-// https://www.geeksforgeeks.org/dsa/multiplicative-inverse-under-modulo-m/
-// power mod
+// Computes (base^exp) mod (mod)
 function powMod(base, exp, mod) {
     let result = 1n;
     base %= mod;
 
     while (exp > 0n) {
-        if (exp % 2n) result = (result * base) % mod;
+        if (exp % 2n){
+            result = (result * base) % mod;
+        }
         base = (base * base) % mod;
         exp /= 2n;
     }
 
     return result;
 }
-// sha 256 hash
+// Hashes data using SHA-256 from crypto-js.min.js
 function sha256(data){
     let hashOutput = CryptoJS.SHA256(data).toString();
-    return hashOutput
+    return hashOutput;
 }
-// derive n, phi and d
+
+// Retrieves keys based on selected inventory
+// Calculates value of n, phi and d
 function calculateRSAParams(){
-    // Calculates value of n, phi and d
     let p = 0;
     let q = 0;
     let e = 0;
     if (document.getElementById("inventory").value === 'A'){
-        p = keys.PART1.A.p
-        q = keys.PART1.A.q
-        e = keys.PART1.A.e
+        p = keys.PART1.A.p;
+        q = keys.PART1.A.q;
+        e = keys.PART1.A.e;
     }
     else if (document.getElementById("inventory").value === 'B'){
-        p = keys.PART1.B.p
-        q = keys.PART1.B.q
-        e = keys.PART1.B.e
+        p = keys.PART1.B.p;
+        q = keys.PART1.B.q;
+        e = keys.PART1.B.e;
     }
     else if (document.getElementById("inventory").value === 'C'){
-        p = keys.PART1.C.p
-        q = keys.PART1.C.q
-        e = keys.PART1.C.e
+        p = keys.PART1.C.p;
+        q = keys.PART1.C.q;
+        e = keys.PART1.C.e;
     }
     else{
-        p = keys.PART1.D.p
-        q = keys.PART1.D.q
-        e = keys.PART1.D.e
+        p = keys.PART1.D.p;
+        q = keys.PART1.D.q;
+        e = keys.PART1.D.e;
     }
-    let n = p * q
-    let phi = (p-1n) * (q-1n)
-    let d = modInverse(e, phi)
+    let n = p * q;
+    let phi = (p-1n) * (q-1n);
+    let d = modInverse(e, phi);
     return { p, q, e, n, phi, d };
 }
-// sign record hash^d mod n
-let signature = null
-let signingInventory = null
+// Creates global variables
+let signature = null;
+let signingInventory = null;
+let signingPublicKey = null;
 let results = document.getElementById("results");
+
+// Signs record using hash^d mod n
 function sign(){
-    let { p, q, e, n, phi, d} = calculateRSAParams()
+    let { p, q, e, n, phi, d} = calculateRSAParams();
 
     results.textContent = "";
-    results.innerHTML += (`Inventory: ${document.getElementById("inventory").value}<br><br>`)
-    results.innerHTML += (`p value: ${p}<br>q value: ${q}<br>e value: ${e}<br><br>`)
+    results.innerHTML += (`Inventory: ${document.getElementById("inventory").value}<br><br>`);
+    results.innerHTML += (`p value: ${p}<br>q value: ${q}<br>e value: ${e}<br><br>`);
 
     let plaintext = document.getElementById("record").value;
     let hash = sha256(plaintext);
     let decimalHash = BigInt("0x" + hash);
 
     signature = powMod(decimalHash, d, n);
-    signingInventory = document.getElementById("inventory").value
-    results.innerHTML += (`n (p*q): ${n}<br>phi(n): ${phi}<br><br>`)
-    results.innerHTML += (`Public key (e, n): (${e}, ${n})<br>Private key (d, n): (${d}, ${n})<br><br>`)
-    results.innerHTML += (`Hash value: ${hash}<br>Decimal Hash value: ${decimalHash}<br><br>`)
-    results.innerHTML += (`Signature: ${signature}`)
+    signingInventory = document.getElementById("inventory").value;
+    signingPublicKey = {e: e, n: n};
+    results.innerHTML += (`n (p*q): ${n}<br>phi(n): ${phi}<br><br>`);
+    results.innerHTML += (`Public key (e, n): (${e}, ${n})<br>Private key (d, n): (${d}, ${n})<br><br>`);
+    results.innerHTML += (`Hash value: ${hash}<br>Decimal Hash value: ${decimalHash}<br><br>`);
+    results.innerHTML += (`Signature: ${signature}`);
 }
-// verify signature sig^e mod n
+// Verifies signature using sig^e mod n
 function verify(){
     results.innerHTML = "";
     if (!signature){
@@ -132,16 +139,15 @@ function verify(){
     }
     let record = document.getElementById("record").value;
     let inventory = document.getElementById("inventory").value;
-    let { p, q, e, n } = calculateRSAParams();
     let hashedRecord = sha256(record);
-    let decimalHash = BigInt("0x" + hashedRecord);
-    let decryptedSig = powMod(signature, e, n)
+    let decryptedSig = powMod(signature, signingPublicKey.e, signingPublicKey.n).toString(16);
     let valid = false;
-    if (decimalHash === decryptedSig){
+    if (hashedRecord === decryptedSig){
         valid = true;
     }
-    results.innerHTML += `Recomputed hash (decimal): ${decimalHash}<br>`;
-    results.innerHTML += `Decrypted Signature (decimal): ${decryptedSig}<br>`;
+    results.innerHTML += `Using Inventory ${signingInventory}'s public key to verify signature<br><br>`;
+    results.innerHTML += `Recomputed hash (hex): ${hashedRecord}<br>`;
+    results.innerHTML += `Decrypted Signature (hex): ${decryptedSig}<br>`;
     if (valid){
         results.innerHTML += `Signature is VALID (Authentic and Untampered)`;
     }
@@ -149,8 +155,28 @@ function verify(){
         results.innerHTML += `Signature is INVALID`;
     }
 }
+
+// Changes data to make signature verification fail
+function tamper(){
+    if (!signature){
+        results.innerHTML = "Please sign data before attempting to tamper";
+        return;
+    }
+    let record = document.getElementById("record");
+    record.value += "1"
+    results.innerHTML = "Results have been tampered";
+}
+// As the script is a module, this is necessary to make these functions accessible by the html buttons
 window.sign = sign;
 window.verify = verify;
+window.tamper = tamper;
 </script>
 </body>
 </html>
+
+<!--
+References:
+https://www.geeksforgeeks.org/dsa/multiplicative-inverse-under-modulo-m/
+https://stackoverflow.com/questions/5989429/pow-and-mod-function-optimization
+
+-->
